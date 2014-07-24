@@ -162,6 +162,30 @@ def set_property(args):
          ),
          args['data']], ignore_errors=True)
 
+
+def restore_property(args):
+    """Set properties"""
+    data = load_data(args)
+    if not data:
+        return
+    
+    for fn in args['files']:
+        if not file_in_git(fn):
+            Msg.warn('%s is not in git any more. You can remove it.' % fn)
+            continue
+        if not os.path.exists(fn):
+            Msg.warn('%s is does not exist. You can remove it.' % fn)
+            continue
+        if not data.has_key(fn):
+            Msg.warn('Got no property for %s' % fn)
+            continue
+        for prop in data[fn].keys():
+            if not properties.has_key(prop):
+                Msg.warn('Invalid property %s for %s' % (prop, fn))
+                continue
+            properties[prop]['restore'](fn, data[fn][prop])
+            if args['verbose']:
+                Msg.ok('Restoring %s:%s for %s' % (str(prop), str(data[fn][prop]), fn))
     
 def parse_cmd_line():
     """Parse command line arguments"""
@@ -221,7 +245,8 @@ def __init__():
 
     if args['cmd'] == 'set':
         set_property(args)
-
+    elif args['cmd'] == 'restore':
+        restore_property(args)
     
 if __name__ == "__main__":
     __init__()
