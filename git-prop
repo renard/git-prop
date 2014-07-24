@@ -8,7 +8,7 @@
 
 # Copyright © 2014 Sébastien Gross <seb•ɑƬ•chezwam•ɖɵʈ•org>
 # Created: 2014-02-26
-# Last changed: 2014-07-25 00:25:34
+# Last changed: 2014-07-25 01:34:50
 
 # This program is free software. It comes without any warranty, to
 # the extent permitted by applicable law. You can redistribute it
@@ -156,14 +156,45 @@ def set_property(args):
 
     run(['git', 'add', args['data']])
     run(['git', 'commit', '-m',
-         'git prop %s %s\n\n - %s' % (
+         'git prop set %s %s\n\n - %s' % (
              args['propname'],
              args['propvalue'],
              '\n - '.join(args['files'])
          ),
          args['data']], ignore_errors=True)
 
+def delete_property(args):
+    "Delete properties"
+    data = load_data(args)
+    if not data:
+        data = {}
+    for fn in args['files']:
+        if not data.has_key(fn):
+            Msg.warn('%s has no poperties' % fs)
+            continue
+        if not data[fn].has_key(args['propname']):
+            Msg.warn('%s has no poperty %s' % (fs, p))
+            continue
+        del(data[fn][args['propname']])
+        if not data[fn].keys():
+            del(data[fn])
 
+    p = open(args['data'], 'w')
+    p.write(json.dumps(data, indent=1))
+    p.close()
+
+    run(['git', 'add', args['data']])
+    run(['git', 'commit', '-m',
+         'git prop delete %s\n\n - %s' % (
+             args['propname'],
+             '\n - '.join(args['files'])
+         ),
+         args['data']], ignore_errors=True)
+
+        
+    
+    
+    
 def restore_property(args):
     """Set properties"""
     data = load_data(args)
@@ -246,23 +277,33 @@ Examples:
     cmd_dump = sp_cmd.add_parser('dump', help='Dump properties')
     cmd_dump.add_argument('files', help='Files', nargs='*')
 
+    cmd_delete = sp_cmd.add_parser('delete', help='Delete properties')
+    cmd_delete.add_argument('propname', help='property name', choices=properties.keys() )
+    cmd_delete.add_argument('files', help='Files', nargs='*')
+
     
     ret = args.parse_args().__dict__
     return ret
 
 
-
+#def get_root():
 
 
 def __init__():
+    # root = run(['git', 'rev-parse', '--show-toplevel'],
+    #            ignore_errors=True).splitlines()[0]
+    
+    # print root                  # 
     args = parse_cmd_line()
-
+    
     if args['cmd'] == 'set':
         set_property(args)
     elif args['cmd'] == 'restore':
         restore_property(args)
     elif args['cmd'] == 'dump':
         dump_property(args)
+    elif args['cmd'] == 'delete':
+        delete_property(args)
     
 if __name__ == "__main__":
     __init__()
