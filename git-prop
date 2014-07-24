@@ -145,12 +145,22 @@ def set_property(args):
             continue
         if not data.has_key(fn):
             data[fn] = {}
-        data[fn][args['propname']] = fprop['set'](args['propvalue'])
+        propv = fprop['set'](args['propvalue'])
+        data[fn][args['propname']] = fprop['restore'](fn, propv)
+        data[fn][args['propname']] = propv
 
     p = open(args['data'], 'w')
     p.write(json.dumps(data, indent=1))
     p.close()
-    
+
+    run(['git', 'add', args['data']])
+    run(['git', 'commit', '-m',
+         'git prop %s %s\n\n - %s' % (
+             args['propname'],
+             args['propvalue'],
+             '\n - '.join(args['files'])
+         ),
+         args['data']], ignore_errors=True)
 
     
 def parse_cmd_line():
