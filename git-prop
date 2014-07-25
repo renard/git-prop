@@ -8,7 +8,7 @@
 
 # Copyright © 2014 Sébastien Gross <seb•ɑƬ•chezwam•ɖɵʈ•org>
 # Created: 2014-02-26
-# Last changed: 2014-07-25 01:34:50
+# Last changed: 2014-07-25 12:20:50
 
 # This program is free software. It comes without any warranty, to
 # the extent permitted by applicable law. You can redistribute it
@@ -139,16 +139,19 @@ def set_property(args):
         return None
     
     fprop = properties[args['propname']]
+    add_files = []
     
     for fn in args['files']:
+        fn_root = file_root_relative(fn, args)
         if not file_in_git(fn):
             Msg.warn('%s is not in git. run git add first.' % fn)
             continue
-        if not data.has_key(fn):
-            data[fn] = {}
+        if not data.has_key(fn_root):
+            data[fn_root] = {}
         propv = fprop['set'](args['propvalue'])
-        data[fn][args['propname']] = fprop['restore'](fn, propv)
-        data[fn][args['propname']] = propv
+        data[fn_root][args['propname']] = fprop['restore'](fn, propv)
+        data[fn_root][args['propname']] = propv
+        add_files.append(fn_root)
 
     p = open(args['data'], 'w')
     p.write(json.dumps(data, indent=1))
@@ -159,7 +162,7 @@ def set_property(args):
          'git prop set %s %s\n\n - %s' % (
              args['propname'],
              args['propvalue'],
-             '\n - '.join(args['files'])
+             '\n - '.join(add_files)
          ),
          args['data']], ignore_errors=True)
 
@@ -168,17 +171,20 @@ def delete_property(args):
     data = load_data(args)
     if not data:
         data = {}
+    add_files = []
     for fn in args['files']:
-        if not data.has_key(fn):
+        fn_root = file_root_relative(fn, args)
+        if not data.has_key(fn_root):
             Msg.warn('%s has no poperties' % fs)
             continue
-        if not data[fn].has_key(args['propname']):
+        if not data[fn_root].has_key(args['propname']):
             Msg.warn('%s has no poperty %s' % (fs, p))
             continue
-        del(data[fn][args['propname']])
-        if not data[fn].keys():
-            del(data[fn])
-
+        del(data[fn_root][args['propname']])
+        if not data[fn_root].keys():
+            del(data[fn_root])
+        add_files.append(fn_root)
+        
     p = open(args['data'], 'w')
     p.write(json.dumps(data, indent=1))
     p.close()
@@ -187,12 +193,10 @@ def delete_property(args):
     run(['git', 'commit', '-m',
          'git prop delete %s\n\n - %s' % (
              args['propname'],
-             '\n - '.join(args['files'])
+             '\n - '.join(add_files)
          ),
          args['data']], ignore_errors=True)
 
-        
-    
     
     
 def restore_property(args):
@@ -202,22 +206,24 @@ def restore_property(args):
         return
     
     for fn in args['files']:
-        if not file_in_git(fn):
+        fn_root = file_root_relative(fn, args)
+        if not file_in_git(fn_root):
             Msg.warn('%s is not in git any more. You can remove it.' % fn)
             continue
         if not os.path.exists(fn):
             Msg.warn('%s is does not exist. You can remove it.' % fn)
             continue
-        if not data.has_key(fn):
+        if not data.has_key(fn_root):
             Msg.warn('Got no property for %s' % fn)
             continue
-        for prop in data[fn].keys():
+        for prop in data[fn_root].keys():
             if not properties.has_key(prop):
                 Msg.warn('Invalid property %s for %s' % (prop, fn))
                 continue
-            properties[prop]['restore'](fn, data[fn][prop])
+            properties[prop]['restore'](fn, data[fn_root][prop])
             if args['verbose']:
-                Msg.ok('Restoring %s:%s for %s' % (str(prop), str(data[fn][prop]), fn))
+                Msg.ok('Restoring %s:%s for %s' % (str(prop),
+                                                   str(data[fn_root][prop]), fn))
 
 
 def dump_property(args):
@@ -225,12 +231,14 @@ def dump_property(args):
     data = load_data(args)
     files = data.keys()
     files.sort
-    for f in files:
-        sys.stdout.write("%s: " % (f))
-        props = data[f].keys()
+    for fn in files:
+        fn_root = os.path.relpath(os.path.sep.join([args['_root'], fn]),
+                                  args['_cwd'])
+        sys.stdout.write("%s: " % (fn_root))
+        props = data[fn].keys()
         props.sort()
         for p in props:
-            sys.stdout.write("%s:%s " % (p, properties[p]['dump'](data[f][p])))
+            sys.stdout.write("%s:%s " % (p, properties[p]['dump'](data[fn][p])))
         sys.stdout.write('\n')
                 
 def parse_cmd_line():
@@ -286,16 +294,38 @@ Examples:
     return ret
 
 
-#def get_root():
+def get_root():
+    root_dir_list = run(['git', 'rev-parse', '--show-toplevel'],
+                        ignore_errors=True).splitlines()
+    if not root_dir_list:
+        Msg.error('Not in a git repository')
+        sys.exit(1)
+    return root_dir_list[0]
+
+def file_root_relative(filename, args):
+    "Return FILENAME relative to git root directory"
+    filename_abs  = os.sep.join([args['_cwd'], filename])
+    return root_relative_path(filename_abs, args)
+
+
+
+def root_relative_path(file, args):
+    return os.path.relpath(
+        os.path.abspath(file),
+        args['_root'],
+    )
 
 
 def __init__():
-    # root = run(['git', 'rev-parse', '--show-toplevel'],
-    #            ignore_errors=True).splitlines()[0]
     
-    # print root                  # 
     args = parse_cmd_line()
     
+    args['_cwd'] = os.getcwd()
+    args['_root'] = get_root()
+    args['_root_rel'] = root_relative_path(os.getcwd(), args)
+    
+    args['data'] = os.path.relpath(os.path.sep.join([args['_root'], args['data']]), args['_cwd'])
+            
     if args['cmd'] == 'set':
         set_property(args)
     elif args['cmd'] == 'restore':
