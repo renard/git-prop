@@ -1,0 +1,92 @@
+= git-prop(1) =
+
+== NAME ==
+
+git-prop - Handle svn properties like attribute in git
+
+== SYNOPSIS ==
+
+git prop [-h] [--data PATH] [--verbose] {init,restore,set,dump,delete} FILES
+
+== DESCRIPTION ==
+
+Git (currently) cannot handle properties like +svn prop+ does. This is
+useful to ensure permission to a file for example a ssh private key *must*
+be set to +0600+ which git cannot handle. with +git prop+ you can set
+permission to that particular file and automaticaly restore them after merge
+or checkout.
+
+== OPTIONS ==
+
+--data DATA::
+
+  Set the +git-meta+ database file (default: '.gitprop' in git top level
+  directory).
+
+== COMMANDS ==
+
+init::
+
+  Create hooks in git hooks directory.
+
+set PROPNAME PROPVALUE file [ files ]::
+
+  Set property +PROPNAME+ to value +PROPVALUE+ for files.
+
+delete PROPNAME [ file ]::
+
+  Delete property +PROPNAME+ for files.
+
+restore [ files ]::
+
+  Restore all properties for files or all git known files.
+
+dump::
+
+  Dump all known properties for all files.
+
+
+== DATABASE FORMAT ==
+
+The database format is quiet simple. It consists of a JSON dump of a
+dictionnary for which the file name is the key and the file attributes are
+the properties values.
+
+=== Dictionnary format ===
+
+The key is composed of the full filename path starting from the git
+repository root.
+
+Each values are:
+
+- +mode+: the file permissions in decimal format.
+
+
+Currently only +mode+ is supported.
+
+== USING WITH GIT HOOKS ==
+
+Manual use +git prop+ is not that much handy. It can be configured to be
+used directly withing githooks(5), specially *pre-commit* for the backup and
+*post-merge* for the restore. to set up the hooks you can run:
+
+   git prop init
+
+== SEE ALSO ==
+
+git(1), githooks(5).
+
+== BUGS ==
+
+No time to include bugs, command actions might seldom lead astray user's
+assumption.
+
+== AUTHORS ==
+
++git-prop+ is written by Sébastien Gross <seb•ɑƬ•chezwam•ɖɵʈ•org>.
+
+== COPYRIGHT ==
+
+Copyright © 2014 Sébastien Gross <seb•ɑƬ•chezwam•ɖɵʈ•org>.
+
+Relased under WTFPL (http://sam.zoy.org/wtfpl/COPYING[]).

@@ -1,0 +1,128 @@
+'\" t
+.\"     Title: git-prop
+.\"    Author: [see the "AUTHORS" section]
+.\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
+.\"      Date: 07/25/2014
+.\"    Manual: \ \&
+.\"    Source: \ \&
+.\"  Language: English
+.\"
+.TH "GIT\-PROP" "1" "07/25/2014" "\ \&" "\ \&"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+git-prop \- Handle svn properties like attribute in git
+.SH "SYNOPSIS"
+.sp
+git prop [\-h] [\-\-data PATH] [\-\-verbose] {init,restore,set,dump,delete} FILES
+.SH "DESCRIPTION"
+.sp
+Git (currently) cannot handle properties like svn prop does\&. This is useful to ensure permission to a file for example a ssh private key \fBmust\fR be set to 0600 which git cannot handle\&. with git prop you can set permission to that particular file and automaticaly restore them after merge or checkout\&.
+.SH "OPTIONS"
+.PP
+\-\-data DATA
+.RS 4
+Set the
+git\-meta
+database file (default:
+\fI\&.gitprop\fR
+in git top level directory)\&.
+.RE
+.SH "COMMANDS"
+.PP
+init
+.RS 4
+Create hooks in git hooks directory\&.
+.RE
+.PP
+set PROPNAME PROPVALUE file [ files ]
+.RS 4
+Set property
+PROPNAME
+to value
+PROPVALUE
+for files\&.
+.RE
+.PP
+delete PROPNAME [ file ]
+.RS 4
+Delete property
+PROPNAME
+for files\&.
+.RE
+.PP
+restore [ files ]
+.RS 4
+Restore all properties for files or all git known files\&.
+.RE
+.PP
+dump
+.RS 4
+Dump all known properties for all files\&.
+.RE
+.SH "DATABASE FORMAT"
+.sp
+The database format is quiet simple\&. It consists of a JSON dump of a dictionnary for which the file name is the key and the file attributes are the properties values\&.
+.SS "Dictionnary format"
+.sp
+The key is composed of the full filename path starting from the git repository root\&.
+.sp
+Each values are:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+
+mode: the file permissions in decimal format\&.
+.RE
+.sp
+Currently only mode is supported\&.
+.SH "USING WITH GIT HOOKS"
+.sp
+Manual use git prop is not that much handy\&. It can be configured to be used directly withing githooks(5), specially \fBpre\-commit\fR for the backup and \fBpost\-merge\fR for the restore\&. to set up the hooks you can run:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+git prop init
+.fi
+.if n \{\
+.RE
+.\}
+.SH "SEE ALSO"
+.sp
+git(1), githooks(5)\&.
+.SH "BUGS"
+.sp
+No time to include bugs, command actions might seldom lead astray user\(cqs assumption\&.
+.SH "AUTHORS"
+.sp
+git\-prop is written by S\('ebastien Gross <seb\(buɑƬ\(buchezwam\(buɖɵʈ\(buorg>\&.
+.SH "COPYRIGHT"
+.sp
+Copyright \(co 2014 S\('ebastien Gross <seb\(buɑƬ\(buchezwam\(buɖɵʈ\(buorg>\&.
+.sp
+Relased under WTFPL (\m[blue]\fBhttp://sam\&.zoy\&.org/wtfpl/COPYING\fR\m[])\&.
