@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 """
-# git-meta --- Handle file metadata in git
+# git-prop --- Handle svn-like properties in git
 
 """
 
 # Copyright © 2014 Sébastien Gross <seb•ɑƬ•chezwam•ɖɵʈ•org>
 # Created: 2014-02-26
-# Last changed: 2014-07-25 12:40:57
+# Last changed: 2014-07-25 14:25:36
 
 # This program is free software. It comes without any warranty, to
 # the extent permitted by applicable law. You can redistribute it
@@ -22,13 +22,8 @@ __copyright__ = """Copyright © 2014 Sébastien Gross <seb•ɑƬ•chezwam•ɖ
 
 import os, sys, subprocess
 import pipes
-from stat import *
-import pwd
-import grp
 import json
 import argparse
-import datetime
-import re
 
 #
 # Local classes
