@@ -8,7 +8,7 @@
 
 # Copyright © 2014 Sébastien Gross <seb•ɑƬ•chezwam•ɖɵʈ•org>
 # Created: 2014-02-26
-# Last changed: 2014-07-25 12:20:50
+# Last changed: 2014-07-25 12:40:57
 
 # This program is free software. It comes without any warranty, to
 # the extent permitted by applicable law. You can redistribute it
@@ -140,8 +140,12 @@ def set_property(args):
     
     fprop = properties[args['propname']]
     add_files = []
+
+    files = args['files']
+    if not files:
+        files = run(['git', 'ls-files'])
     
-    for fn in args['files']:
+    for fn in files:
         fn_root = file_root_relative(fn, args)
         if not file_in_git(fn):
             Msg.warn('%s is not in git. run git add first.' % fn)
@@ -172,13 +176,22 @@ def delete_property(args):
     if not data:
         data = {}
     add_files = []
-    for fn in args['files']:
+
+    files = args['files']
+    ignore = False
+    if not files:
+        files = run(['git', 'ls-files']).splitlines()
+        ignore = True
+
+    for fn in files:
         fn_root = file_root_relative(fn, args)
         if not data.has_key(fn_root):
-            Msg.warn('%s has no poperties' % fs)
+            if not ignore:
+                Msg.warn('%s has no poperties' % fn)
             continue
         if not data[fn_root].has_key(args['propname']):
-            Msg.warn('%s has no poperty %s' % (fs, p))
+            if not ignore:
+                Msg.warn('%s has no poperty %s' % (fn, p))
             continue
         del(data[fn_root][args['propname']])
         if not data[fn_root].keys():
@@ -204,8 +217,12 @@ def restore_property(args):
     data = load_data(args)
     if not data:
         return
-    
-    for fn in args['files']:
+
+    files = args['files']
+    if not files:
+        files = run(['git', 'ls-files'])
+
+    for fn in files:
         fn_root = file_root_relative(fn, args)
         if not file_in_git(fn_root):
             Msg.warn('%s is not in git any more. You can remove it.' % fn)
@@ -268,9 +285,6 @@ Examples:
     
     sp_cmd.add_parser('init', help='Setup hooks in .git directory')
 
-    #_sp_cmd_restore = sp_cmd.add_parser('restore', help='Restore properties')
-    #sp_cmd_restore = _sp_cmd_restore.add_subparsers(help='Command', dest='restore')a
-
     cmd_restore = sp_cmd.add_parser('restore', help='Restore properties')
     cmd_restore.add_argument('files', help='Files', nargs='*')
 
@@ -286,7 +300,8 @@ Examples:
     cmd_dump.add_argument('files', help='Files', nargs='*')
 
     cmd_delete = sp_cmd.add_parser('delete', help='Delete properties')
-    cmd_delete.add_argument('propname', help='property name', choices=properties.keys() )
+    cmd_delete.add_argument('propname', help='property name',
+                            choices=properties.keys() )
     cmd_delete.add_argument('files', help='Files', nargs='*')
 
     
@@ -295,6 +310,7 @@ Examples:
 
 
 def get_root():
+    "Return the absolute path of git root directory"
     root_dir_list = run(['git', 'rev-parse', '--show-toplevel'],
                         ignore_errors=True).splitlines()
     if not root_dir_list:
@@ -316,6 +332,22 @@ def root_relative_path(file, args):
     )
 
 
+def init_hooks(args):
+    out = run(['git', 'rev-parse', '--git-dir'])
+    dir = out.split('\n')[0]
+    f='%s/hooks/post-merge' % dir
+    fh = open(f, 'w')
+    fh.write( "#!/bin/sh\n\n" +
+              "if test -e %s; then\n" % args['data'] +
+              "    git prop restore || true\n" +
+              "fi\n")
+    fh.close()
+    os.chmod(f, 33261)
+    if not os.path.exists('%s/hooks/post-checkout' % dir):
+        os.symlink('post-merge', '%s/hooks/post-checkout' % dir)
+
+
+
 def __init__():
     
     args = parse_cmd_line()
@@ -324,7 +356,9 @@ def __init__():
     args['_root'] = get_root()
     args['_root_rel'] = root_relative_path(os.getcwd(), args)
     
-    args['data'] = os.path.relpath(os.path.sep.join([args['_root'], args['data']]), args['_cwd'])
+    args['data'] = os.path.relpath(
+        os.path.sep.join([args['_root'], args['data']]),
+        args['_cwd'])
             
     if args['cmd'] == 'set':
         set_property(args)
@@ -334,6 +368,8 @@ def __init__():
         dump_property(args)
     elif args['cmd'] == 'delete':
         delete_property(args)
+    elif args['cmd'] == 'init':
+        init_hooks(args)
     
 if __name__ == "__main__":
     __init__()
