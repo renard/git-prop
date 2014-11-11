@@ -8,7 +8,7 @@
 
 # Copyright © 2014 Sébastien Gross <seb•ɑƬ•chezwam•ɖɵʈ•org>
 # Created: 2014-02-26
-# Last changed: 2014-11-11 22:21:06
+# Last changed: 2014-11-11 22:29:54
 
 # This program is free software. It comes without any warranty, to
 # the extent permitted by applicable law. You can redistribute it
@@ -123,7 +123,7 @@ def load_data(args):
         p.close()
         return ret
     else:
-        Msg.error('Could not find properites file %s' % args['data'],
+        Msg.error('Could not find properties file %s' % args['data'],
                   stream=sys.stderr)
         sys.exit(1)
         
@@ -360,7 +360,7 @@ def init_hooks(args):
         os.symlink('post-merge', '%s/hooks/post-checkout' % dir)
     prop_file = get_config('prop.data')
     if prop_file is None:
-        run(['git', 'config', '--add', 'prop.data', args['data'])
+        run(['git', 'config', '--add', 'prop.data', args['data']])
 
 
 def __init__():
