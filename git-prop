@@ -8,7 +8,7 @@
 
 # Copyright © 2014 Sébastien Gross <seb•ɑƬ•chezwam•ɖɵʈ•org>
 # Created: 2014-02-26
-# Last changed: 2014-11-11 22:32:14
+# Last changed: 2014-11-11 22:55:40
 
 # This program is free software. It comes without any warranty, to
 # the extent permitted by applicable law. You can redistribute it
@@ -25,31 +25,36 @@ import pipes
 import json
 import argparse
 
+reload(sys)
+sys.setdefaultencoding("UTF8")
+
 #
 # Local classes
 #
 class Msg:
     """Print messages to the user."""
 
-    INFO = ('\033[95m●', '[I]')
-    DEBUG = ('\033[94m✓', '[D]')
-    OK = ('\033[92m✔', '[O]')
-    WARN = ('\033[93m❢', '[W]')
-    ERROR = ('\033[91m✘', '[E]')
-    OUT = ('\033[92m', '1>')
-    ERR = ('\033[91m', '2>')
-    ENDC = '\033[0m'
+    INFO = (u'\033[95m●', '[I]')
+    DEBUG = (u'\033[94m✓', '[D]')
+    OK = (u'\033[92m✔', '[O]')
+    WARN = (u'\033[93m❢', '[W]')
+    ERROR = (u'\033[91m✘', '[E]')
+    OUT = (u'\033[92m', '1>')
+    ERR = (u'\033[91m', '2>')
+    ENDC = u'\033[0m'
 
     @staticmethod
     def __do_print(m, header, stream=sys.stdout, full_color=False):
+        msg = m
         if stream.isatty():
             if full_color:
-                stream.write(header[0] + m + Msg.ENDC)
+                msg = header[0] + m + Msg.ENDC
             else:
-                stream.write(header[0] + Msg.ENDC + ' ' + m)
+                msg = header[0] + Msg.ENDC + ' ' + m
         else:
             stream.write(header[1] + m)
-        stream.write('\n')
+            msg = header[1] + m
+        stream.write(u'%s\n' % msg.decode('utf-8'))
         stream.flush()
 
     @staticmethod
