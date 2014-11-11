@@ -8,7 +8,7 @@
 
 # Copyright © 2014 Sébastien Gross <seb•ɑƬ•chezwam•ɖɵʈ•org>
 # Created: 2014-02-26
-# Last changed: 2014-07-25 16:05:09
+# Last changed: 2014-11-11 22:21:06
 
 # This program is free software. It comes without any warranty, to
 # the extent permitted by applicable law. You can redistribute it
@@ -122,7 +122,20 @@ def load_data(args):
             pass
         p.close()
         return ret
+    else:
+        Msg.error('Could not find properites file %s' % args['data'],
+                  stream=sys.stderr)
+        sys.exit(1)
+        
+def get_config(key):
+    """Get git config KEY.
 
+If KEY is found, return a list of all found values, return None otherwise."""
+    vals = run(['git', 'config', '--get', key], ignore_errors=True)
+    if vals:
+        return vals.split('\n')[:-1]
+    return None
+    
 def set_property(args):
     """Set properties"""
     data = load_data(args)
@@ -270,8 +283,14 @@ Examples:
         '''
     )
 
+    default_prop = get_config('prop.data')
+    if default_prop:
+        default_prop = default_prop[0]
+    else:
+        default_prop = '.gitprop'
+        
     args.add_argument('--data', help='Path to database', metavar='PATH',
-                      default='.gitprop')
+                      default=default_prop)
     args.add_argument('--verbose', '-v', help='Run in verbose mode',
                       action='store_true')
 
@@ -339,7 +358,9 @@ def init_hooks(args):
     os.chmod(f, 33261)
     if not os.path.exists('%s/hooks/post-checkout' % dir):
         os.symlink('post-merge', '%s/hooks/post-checkout' % dir)
-
+    prop_file = get_config('prop.data')
+    if prop_file is None:
+        run(['git', 'config', '--add', 'prop.data', args['data'])
 
 
 def __init__():
@@ -367,3 +388,4 @@ def __init__():
     
 if __name__ == "__main__":
     __init__()
+    #get_config('prop.data')
